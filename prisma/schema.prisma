@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clients  Client[]
+  projects Project[]
+  invoices Invoice[]
+  leads    Lead[]
+}
+
+model Client {
+  id        Int      @id @default(autoincrement())
+  name      String
+  company   String
+  email     String
+  phone     String
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId   Int
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects Project[]
+  invoices Invoice[]
+}
+
+model Project {
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    String   @default("Planning")
+  progress  Int      @default(0)
+  dueDate   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id        Int      @id @default(autoincrement())
+  number    String
+  date      String
+  amount    Float
+  status    String   @default("Pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id        Int      @id @default(autoincrement())
+  title     String
+  company   String
+  value     Float
+  status    String   @default("New")
+  type      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
