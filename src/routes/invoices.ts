@@ -28,7 +28,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const invoice = await prisma.invoice.findFirst({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
       include: { client: true },
     });
     if (!invoice) {
@@ -70,14 +70,14 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { number, date, amount, status, clientId } = req.body;
     const result = await prisma.invoice.updateMany({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
       data: { number, date, amount, status, clientId },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     const updated = await prisma.invoice.findFirst({
-      where: { id: parseInt(req.params.id) },
+      where: { id: parseInt(req.params.id as string) },
       include: { client: { select: { name: true, company: true } } },
     });
     res.json({
@@ -94,14 +94,14 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.body;
     const result = await prisma.invoice.updateMany({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
       data: { status },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     const updated = await prisma.invoice.findFirst({
-      where: { id: parseInt(req.params.id) },
+      where: { id: parseInt(req.params.id as string) },
       include: { client: { select: { name: true, company: true } } },
     });
     res.json({
@@ -117,7 +117,7 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const result = await prisma.invoice.deleteMany({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Invoice not found' });

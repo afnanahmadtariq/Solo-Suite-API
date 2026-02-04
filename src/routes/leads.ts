@@ -28,7 +28,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const lead = await prisma.lead.findFirst({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
     });
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found' });
@@ -65,14 +65,14 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { title, company, value, status, type } = req.body;
     const result = await prisma.lead.updateMany({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
       data: { title, company, value, status, type },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Lead not found' });
     }
     const updated = await prisma.lead.findFirst({
-      where: { id: parseInt(req.params.id) },
+      where: { id: parseInt(req.params.id as string) },
     });
     res.json({ ...updated, date: getRelativeDate(updated!.createdAt) });
   } catch (error) {
@@ -85,14 +85,14 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.body;
     const result = await prisma.lead.updateMany({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
       data: { status },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Lead not found' });
     }
     const updated = await prisma.lead.findFirst({
-      where: { id: parseInt(req.params.id) },
+      where: { id: parseInt(req.params.id as string) },
     });
     res.json({ ...updated, date: getRelativeDate(updated!.createdAt) });
   } catch (error) {
@@ -104,7 +104,7 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const result = await prisma.lead.deleteMany({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Lead not found' });

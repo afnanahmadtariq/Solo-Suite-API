@@ -29,7 +29,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const project = await prisma.project.findFirst({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
       include: { client: true },
     });
     if (!project) {
@@ -71,14 +71,14 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { name, status, progress, dueDate, clientId } = req.body;
     const result = await prisma.project.updateMany({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
       data: { name, status, progress, dueDate, clientId },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Project not found' });
     }
     const updated = await prisma.project.findFirst({
-      where: { id: parseInt(req.params.id) },
+      where: { id: parseInt(req.params.id as string) },
       include: { client: { select: { name: true, company: true } } },
     });
     res.json({
@@ -94,7 +94,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const result = await prisma.project.deleteMany({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Project not found' });

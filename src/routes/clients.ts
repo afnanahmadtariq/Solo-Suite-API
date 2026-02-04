@@ -23,7 +23,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const client = await prisma.client.findFirst({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
     });
     if (!client) {
       return res.status(404).json({ error: 'Client not found' });
@@ -60,14 +60,14 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { name, company, email, phone, status } = req.body;
     const client = await prisma.client.updateMany({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
       data: { name, company, email, phone, status },
     });
     if (client.count === 0) {
       return res.status(404).json({ error: 'Client not found' });
     }
     const updated = await prisma.client.findFirst({
-      where: { id: parseInt(req.params.id) },
+      where: { id: parseInt(req.params.id as string) },
     });
     res.json(updated);
   } catch (error) {
@@ -79,7 +79,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const result = await prisma.client.deleteMany({
-      where: { id: parseInt(req.params.id), userId: req.userId },
+      where: { id: parseInt(req.params.id as string), userId: req.userId },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Client not found' });
