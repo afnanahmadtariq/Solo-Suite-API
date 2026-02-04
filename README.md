@@ -83,7 +83,7 @@ After seeding:
 Create a `.env` file:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://username:password@localhost:5432/solosuite"
 JWT_SECRET="your-super-secret-jwt-key"
 PORT=3000
 ```
