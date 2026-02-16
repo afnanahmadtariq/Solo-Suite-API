@@ -2,6 +2,7 @@
   "name": "solo-suite-api",
   "version": "1.0.0",
   "description": "Solo Suite Backend API",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
