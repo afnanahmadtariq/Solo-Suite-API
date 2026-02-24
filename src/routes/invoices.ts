@@ -10,12 +10,16 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const invoices = await prisma.invoice.findMany({
       where: { userId: req.userId },
-      include: { client: { select: { name: true, company: true } } },
+      include: {
+        client: { select: { name: true, company: true } },
+        project: { select: { name: true } }
+      },
       orderBy: { createdAt: 'desc' },
     });
     const mapped = invoices.map(i => ({
       ...i,
       client: i.client.company || i.client.name,
+      project: i.project?.name || null,
     }));
     res.json(mapped);
   } catch (error) {
@@ -43,7 +47,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 // Create invoice
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { number, clientId, date, amount, status } = req.body;
+    const { number, clientId, date, amount, status, projectId } = req.body;
     const invoice = await prisma.invoice.create({
       data: {
         number,
@@ -52,12 +56,17 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         status: status || 'Pending',
         userId: req.userId!,
         clientId,
+        projectId,
       },
-      include: { client: { select: { name: true, company: true } } },
+      include: {
+        client: { select: { name: true, company: true } },
+        project: { select: { name: true } }
+      },
     });
     res.status(201).json({
       ...invoice,
       client: invoice.client.company || invoice.client.name,
+      project: invoice.project?.name || null,
     });
   } catch (error) {
     console.error('Create invoice error:', error);
@@ -68,21 +77,25 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 // Update invoice
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const { number, date, amount, status, clientId } = req.body;
+    const { number, date, amount, status, clientId, projectId } = req.body;
     const result = await prisma.invoice.updateMany({
       where: { id: parseInt(req.params.id as string), userId: req.userId },
-      data: { number, date, amount, status, clientId },
+      data: { number, date, amount, status, clientId, projectId },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     const updated = await prisma.invoice.findFirst({
       where: { id: parseInt(req.params.id as string) },
-      include: { client: { select: { name: true, company: true } } },
+      include: {
+        client: { select: { name: true, company: true } },
+        project: { select: { name: true } }
+      },
     });
     res.json({
       ...updated,
       client: updated?.client.company || updated?.client.name,
+      project: updated?.project?.name || null,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update invoice' });
@@ -102,11 +115,15 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
     }
     const updated = await prisma.invoice.findFirst({
       where: { id: parseInt(req.params.id as string) },
-      include: { client: { select: { name: true, company: true } } },
+      include: {
+        client: { select: { name: true, company: true } },
+        project: { select: { name: true } }
+      },
     });
     res.json({
       ...updated,
       client: updated?.client.company || updated?.client.name,
+      project: updated?.project?.name || null,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update invoice status' });

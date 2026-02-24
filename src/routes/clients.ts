@@ -37,7 +37,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 // Create client
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { name, company, email, phone, status } = req.body;
+    const { name, company, email, phone, status, leadId } = req.body;
     const client = await prisma.client.create({
       data: {
         name,
@@ -46,6 +46,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         phone,
         status: status || 'Active',
         userId: req.userId!,
+        leadId,
       },
     });
     res.status(201).json(client);
@@ -58,10 +59,10 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 // Update client
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const { name, company, email, phone, status } = req.body;
+    const { name, company, email, phone, status, leadId } = req.body;
     const client = await prisma.client.updateMany({
       where: { id: parseInt(req.params.id as string), userId: req.userId },
-      data: { name, company, email, phone, status },
+      data: { name, company, email, phone, status, leadId },
     });
     if (client.count === 0) {
       return res.status(404).json({ error: 'Client not found' });

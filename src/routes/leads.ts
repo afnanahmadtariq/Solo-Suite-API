@@ -10,12 +10,14 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const leads = await prisma.lead.findMany({
       where: { userId: req.userId },
+      include: { client: { select: { name: true, company: true } } },
       orderBy: { createdAt: 'desc' },
     });
     // Add relative date for frontend compatibility
     const mapped = leads.map(l => ({
       ...l,
       date: getRelativeDate(l.createdAt),
+      clientName: l.client?.company || l.client?.name || null,
     }));
     res.json(mapped);
   } catch (error) {
@@ -29,31 +31,43 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const lead = await prisma.lead.findFirst({
       where: { id: parseInt(req.params.id as string), userId: req.userId },
+      include: { client: { select: { name: true, company: true } } },
     });
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found' });
     }
-    res.json({ ...lead, date: getRelativeDate(lead.createdAt) });
+    res.json({
+      ...lead,
+      date: getRelativeDate(lead.createdAt),
+      clientName: lead.client?.company || lead.client?.name || null,
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch lead' });
   }
 });
-
 // Create lead
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { title, company, value, status, type } = req.body;
+    const { title, company, value, status, type, name, email, phone } = req.body;
     const lead = await prisma.lead.create({
       data: {
         title,
         company,
+        name,
+        email,
+        phone,
         value,
         status: status || 'New',
         type,
         userId: req.userId!,
       },
+      include: { client: { select: { name: true, company: true } } },
     });
-    res.status(201).json({ ...lead, date: 'Just now' });
+    res.status(201).json({
+      ...lead,
+      date: 'Just now',
+      clientName: lead.client?.company || lead.client?.name || null,
+    });
   } catch (error) {
     console.error('Create lead error:', error);
     res.status(500).json({ error: 'Failed to create lead' });
@@ -63,18 +77,23 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 // Update lead
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const { title, company, value, status, type } = req.body;
+    const { title, company, value, status, type, name, email, phone } = req.body;
     const result = await prisma.lead.updateMany({
       where: { id: parseInt(req.params.id as string), userId: req.userId },
-      data: { title, company, value, status, type },
+      data: { title, company, value, status, type, name, email, phone },
     });
     if (result.count === 0) {
       return res.status(404).json({ error: 'Lead not found' });
     }
     const updated = await prisma.lead.findFirst({
       where: { id: parseInt(req.params.id as string) },
+      include: { client: { select: { name: true, company: true } } },
     });
-    res.json({ ...updated, date: getRelativeDate(updated!.createdAt) });
+    res.json({
+      ...updated,
+      date: getRelativeDate(updated!.createdAt),
+      clientName: updated?.client?.company || updated?.client?.name || null,
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update lead' });
   }
@@ -93,8 +112,13 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
     }
     const updated = await prisma.lead.findFirst({
       where: { id: parseInt(req.params.id as string) },
+      include: { client: { select: { name: true, company: true } } },
     });
-    res.json({ ...updated, date: getRelativeDate(updated!.createdAt) });
+    res.json({
+      ...updated,
+      date: getRelativeDate(updated!.createdAt),
+      clientName: updated?.client?.company || updated?.client?.name || null,
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update lead status' });
   }
@@ -119,7 +143,7 @@ function getRelativeDate(date: Date): string {
   const now = new Date();
   const diff = now.getTime() - date.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  
+
   if (days === 0) return 'Just now';
   if (days === 1) return '1d ago';
   if (days < 7) return `${days}d ago`;
