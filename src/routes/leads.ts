@@ -5,6 +5,16 @@ import { AuthRequest } from '../middleware/auth.js';
 const router = Router();
 const prisma = new PrismaClient();
 
+// Helper to format lead with client name and relative date
+function formatLead(lead: any) {
+  const { client, ...rest } = lead;
+  return {
+    ...rest,
+    date: getRelativeDate(lead.createdAt),
+    clientName: client?.company || client?.name || null,
+  };
+}
+
 // Get all leads
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
@@ -13,13 +23,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       include: { client: { select: { name: true, company: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    // Add relative date for frontend compatibility
-    const mapped = leads.map(l => ({
-      ...l,
-      date: getRelativeDate(l.createdAt),
-      clientName: l.client?.company || l.client?.name || null,
-    }));
-    res.json(mapped);
+    res.json(leads.map(formatLead));
   } catch (error) {
     console.error('Get leads error:', error);
     res.status(500).json({ error: 'Failed to fetch leads' });
@@ -36,15 +40,12 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
     if (!lead) {
       return res.status(404).json({ error: 'Lead not found' });
     }
-    res.json({
-      ...lead,
-      date: getRelativeDate(lead.createdAt),
-      clientName: lead.client?.company || lead.client?.name || null,
-    });
+    res.json(formatLead(lead));
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch lead' });
   }
 });
+
 // Create lead
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
@@ -63,10 +64,11 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       },
       include: { client: { select: { name: true, company: true } } },
     });
+    const { client, ...rest } = lead as any;
     res.status(201).json({
-      ...lead,
+      ...rest,
       date: 'Just now',
-      clientName: lead.client?.company || lead.client?.name || null,
+      clientName: client?.company || client?.name || null,
     });
   } catch (error) {
     console.error('Create lead error:', error);
@@ -89,11 +91,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       where: { id: parseInt(req.params.id as string) },
       include: { client: { select: { name: true, company: true } } },
     });
-    res.json({
-      ...updated,
-      date: getRelativeDate(updated!.createdAt),
-      clientName: updated?.client?.company || updated?.client?.name || null,
-    });
+    if (!updated) return res.status(404).json({ error: 'Lead not found' });
+    res.json(formatLead(updated));
   } catch (error) {
     res.status(500).json({ error: 'Failed to update lead' });
   }
@@ -114,11 +113,8 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response) => {
       where: { id: parseInt(req.params.id as string) },
       include: { client: { select: { name: true, company: true } } },
     });
-    res.json({
-      ...updated,
-      date: getRelativeDate(updated!.createdAt),
-      clientName: updated?.client?.company || updated?.client?.name || null,
-    });
+    if (!updated) return res.status(404).json({ error: 'Lead not found' });
+    res.json(formatLead(updated));
   } catch (error) {
     res.status(500).json({ error: 'Failed to update lead status' });
   }

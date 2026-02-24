@@ -103,4 +103,69 @@ router.get('/me', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Update profile
+router.put('/me', async (req: AuthRequest, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: number };
+
+    const { name, email } = req.body;
+
+    if (!name && !email) {
+      return res.status(400).json({ error: 'Name or email is required' });
+    }
+
+    // Check if email is already taken by another user
+    if (email) {
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser && existingUser.id !== decoded.userId) {
+        return res.status(400).json({ error: 'Email already in use' });
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: decoded.userId },
+      data: {
+        ...(name && { name }),
+        ...(email && { email }),
+      },
+      select: { id: true, email: true, name: true },
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// Delete account
+router.delete('/me', async (req: AuthRequest, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: number };
+
+    // Deleting the user will cascade-delete all related data
+    // (clients, projects, invoices, leads) via onDelete: Cascade in schema
+    await prisma.user.delete({
+      where: { id: decoded.userId },
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ error: 'Failed to delete account' });
+  }
+});
+
 export default router;

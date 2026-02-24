@@ -5,6 +5,15 @@ import { AuthRequest } from '../middleware/auth.js';
 const router = Router();
 const prisma = new PrismaClient();
 
+// Helper to format project with client name
+function formatProject(project: any) {
+  const { client, ...rest } = project;
+  return {
+    ...rest,
+    client: client?.company || client?.name || null,
+  };
+}
+
 // Get all projects
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
@@ -13,12 +22,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       include: { client: { select: { name: true, company: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    // Map to include client name as string for frontend compatibility
-    const mapped = projects.map(p => ({
-      ...p,
-      client: p.client.company || p.client.name,
-    }));
-    res.json(mapped);
+    res.json(projects.map(formatProject));
   } catch (error) {
     console.error('Get projects error:', error);
     res.status(500).json({ error: 'Failed to fetch projects' });
@@ -56,10 +60,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       },
       include: { client: { select: { name: true, company: true } } },
     });
-    res.status(201).json({
-      ...project,
-      client: project.client.company || project.client.name,
-    });
+    res.status(201).json(formatProject(project));
   } catch (error) {
     console.error('Create project error:', error);
     res.status(500).json({ error: 'Failed to create project' });
@@ -81,10 +82,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       where: { id: parseInt(req.params.id as string) },
       include: { client: { select: { name: true, company: true } } },
     });
-    res.json({
-      ...updated,
-      client: updated?.client.company || updated?.client.name,
-    });
+    if (!updated) return res.status(404).json({ error: 'Project not found' });
+    res.json(formatProject(updated));
   } catch (error) {
     res.status(500).json({ error: 'Failed to update project' });
   }
